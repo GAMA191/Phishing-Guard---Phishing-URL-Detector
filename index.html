@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Phishing Guard · URL detector</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+    }
+    body {
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 1.5rem;
+      margin: 0;
+      /* Background image with dark overlay for readability */
+      background: 
+        linear-gradient(145deg, rgba(201, 206, 209, 0.85) 0%, rgba(10, 35, 45, 0.92) 100%),
+        url('https://images.pexels.com/photos/5380642/pexels-photo-5380642.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2') 
+        no-repeat center center / cover;
+      background-attachment: fixed;
+      position: relative;
+    }
+    /* Optional subtle grid overlay to enhance cyber feel */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: 
+        linear-gradient(rgba(212, 223, 223, 0.03) 1px, 1px),
+        linear-gradient(90deg, rgba(0, 255, 255, 0.03) 1px, 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .card {
+      position: relative;
+      z-index: 1;
+      background: rgba(12, 47, 70, 0.78);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-radius: 2.5rem;
+      box-shadow: 0 50px 120px -8px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(100, 200, 220, 0.15);
+      width: 100%;
+      max-width: 880px;
+      padding: 2.2rem 2rem 2.5rem;
+      border: 1px solid rgba(120, 200, 220, 0.25);
+      transition: all 0.2s;
+    }
+    h1 {
+      font-size: 2rem;
+      font-weight: 650;
+      letter-spacing: -0.02em;
+      color: #d0edf7;
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      margin-bottom: 0.4rem;
+      text-shadow: 0 2px 10px rgba(0, 180, 220, 0.4);
+    }
+    h1 span {
+      background: #0b2b3b;
+      color: white;
+      font-size: 1rem;
+      font-weight: 500;
+      padding: 0.25rem 0.8rem;
+      border-radius: 40px;
+      letter-spacing: 0.01em;
+      background: #1f4d5e;
+    }
+    .subhead {
+      color: #9bc7d9;
+      font-size: 1rem;
+      margin-bottom: 2rem;
+      border-left: 4px solid #4c9bb3;
+      padding-left: 1rem;
+      font-weight: 450;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.5);
+    }
+    .input-area {
+      display: flex;
+      flex-direction: column;
+      gap: 0.8rem;
+      margin-bottom: 1.5rem;
+    }
+    label {
+      font-weight: 550;
+      color: #b6dcec;
+      font-size: 0.95rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.4);
+    }
+    label i {
+      font-style: normal;
+      font-size: 1.2rem;
+    }
+    .url-input-wrapper {
+      display: flex;
+      align-items: center;
+      background: rgba(10, 25, 35, 0.9);
+      border-radius: 60px;
+      padding: 0.15rem 0.15rem 0.15rem 1.5rem;
+      box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(80, 180, 200, 0.2);
+      border: 1px solid #2a5f70;
+      transition: border 0.2s, box-shadow 0.2s;
+    }
+    .url-input-wrapper:focus-within {
+      border-color: #3aaac9;
+      box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.6), 0 0 0 4px rgba(58, 170, 201, 0.25);
+    }
+    .url-input-wrapper input {
+      flex: 1;
+      border: none;
+      padding: 0.95rem 0.5rem 0.95rem 0;
+      font-size: 1.05rem;
+      background: transparent;
+      outline: none;
+      color: #e3f2f9;
+      font-weight: 450;
+      min-width: 0;
+    }
+    .url-input-wrapper input::placeholder {
+      color: #6d8f9e;
+      font-weight: 400;
+    }
+    .url-input-wrapper button {
+      background: #17607a;
+      border: none;
+      border-radius: 50px;
+      padding: 0.9rem 2rem;
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: white;
+      cursor: pointer;
+      transition: all 0.2s;
+      letter-spacing: 0.01em;
+      box-shadow: 0 6px 16px rgba(0, 150, 200, 0.4);
+      white-space: nowrap;
+    }
+    .url-input-wrapper button:hover {
+      background: #1e7a96;
+      transform: scale(1.01);
+      box-shadow: 0 8px 22px rgba(0, 170, 220, 0.6);
+    }
+    .url-input-wrapper button:active {
+      transform: scale(0.98);
+      box-shadow: 0 2px 8px rgba(0, 150, 200, 0.6);
+    }
+    .examples {
+      display: flex;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+      margin-top: 0.2rem;
+    }
+    .examples button {
+      background: rgba(30, 70, 90, 0.7);
+      border: 1px solid #2f6f84;
+      color: #b0d8e8;
+      padding: 0.35rem 0.9rem;
+      border-radius: 40px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+    }
+    .examples button:hover {
+      background: #1f5a70;
+      border-color: #4fa8c0;
+      color: #e0f0f8;
+    }
+    .result-card {
+      background: rgba(12, 28, 38, 0.85);
+      backdrop-filter: blur(6px);
+      border-radius: 1.8rem;
+      padding: 1.5rem 1.8rem;
+      margin-top: 1.8rem;
+      border: 1px solid rgba(80, 180, 200, 0.3);
+      box-shadow: 0 12px 30px -10px rgba(0, 0, 0, 0.8), inset 0 0 20px rgba(0, 180, 220, 0.05);
+      transition: all 0.25s;
+    }
+    .verdict {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    .verdict-icon {
+      width: 54px;
+      height: 54px;
+      border-radius: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.9rem;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+    .verdict-text {
+      font-size: 1.7rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+    }
+    .verdict-sub {
+      font-size: 0.95rem;
+      color: #9bbecf;
+      margin-top: 0.25rem;
+      font-weight: 450;
+    }
+    .safe .verdict-icon {
+      background: #1c4d3a;
+      color: #7ce0b0;
+      box-shadow: 0 0 16px rgba(80, 220, 140, 0.2);
+    }
+    .safe .verdict-text {
+      color: #7ce0b0;
+    }
+    .suspicious .verdict-icon {
+      background: #5e4217;
+      color: #ffc164;
+      box-shadow: 0 0 16px rgba(255, 180, 60, 0.2);
+    }
+    .suspicious .verdict-text {
+      color: #ffc164;
+    }
+    .danger .verdict-icon {
+      background: #5e1d1d;
+      color: #ff7b7b;
+      box-shadow: 0 0 16px rgba(255, 70, 70, 0.25);
+    }
+    .danger .verdict-text {
+      color: #ff7b7b;
+    }
+    .unknown .verdict-icon {
+      background: #264653;
+      color: #a8d0e0;
+      box-shadow: 0 0 16px rgba(120, 180, 200, 0.15);
+    }
+    .unknown .verdict-text {
+      color: #a8d0e0;
+    }
+    .details {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.8rem 1.6rem;
+      margin-top: 1.2rem;
+      border-top: 1px dashed #2a5060;
+      padding-top: 1.2rem;
+      font-size: 0.95rem;
+    }
+    .detail-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: #b8d8e8;
+      text-shadow: 0 1px 2px black;
+    }
+    .detail-item .badge {
+      background: #1c3f4f;
+      padding: 0.2rem 0.7rem;
+      border-radius: 30px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #a0d0e0;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+    }
+    .detail-item strong {
+      font-weight: 650;
+      color: #d0edf7;
+      margin-left: 0.25rem;
+    }
+    .feature-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem 1rem;
+      margin-top: 0.3rem;
+    }
+    .feature-tag {
+      background: rgba(30, 70, 85, 0.7);
+      border-radius: 30px;
+      padding: 0.2rem 0.9rem;
+      font-size: 0.8rem;
+      color: #c0e0f0;
+      border: 1px solid #2d6f84;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+    .feature-tag.risk {
+      background: rgba(100, 30, 30, 0.7);
+      border-color: #a05050;
+      color: #ffb0b0;
+    }
+    .empty-state {
+      text-align: center;
+      padding: 1rem 0 0.5rem;
+      color: #8bb0c0;
+      font-size: 0.95rem;
+      font-weight: 450;
+      display: flex;
+      justify-content: center;
+      gap: 0.5rem;
+      align-items: center;
+      text-shadow: 0 1px 4px black;
+    }
+    .glow {
+      transition: all 0.3s;
+    }
+    .footnote {
+      font-size: 0.75rem;
+      text-align: center;
+      margin-top: 1.8rem;
+      color: #6d8b99;
+      font-weight: 450;
+      text-shadow: 0 1px 4px black;
+    }
+    .fade-in {
+      animation: fadeIn 0.25s ease-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .error-shake {
+      animation: shake 0.3s ease-in-out;
+    }
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      25% { transform: translateX(-4px); }
+      75% { transform: translateX(4px); }
+    }
+
+    /* Additional styles for flags and keyword sections inside result */
+    .result-card .detail-item {
+      color: #b8d8e8;
+    }
+    .result-card strong {
+      color: #c0e8f8;
+    }
+  </style>
+</head>
+<body>
+<div class="card">
+  <h1>
+    Phishing Guard
+  </h1>
+
+  <div class="input-area">
+    <label for="urlInput"><i>🔗</i> Enter URL to scan</label>
+    <div class="url-input-wrapper">
+      <input type="text" id="urlInput" placeholder="https://example.com/login" autocomplete="off" spellcheck="false">
+      <button id="scanBtn">Scan</button>
+    </div>
+
+  <div id="resultContainer" class="result-card" style="display: none;">
+    <!-- dynamic result -->
+  </div>
+  <div id="emptyState" class="empty-state">
+    Enter a URL and press scan — results appear here
+  </div>
+
+<script>
+  (function(){
+    // ---------- ADVANCED HEURISTIC ENGINE (pure JS) ----------
+    const SUSPICIOUS_TLDS = new Set([
+      'xyz', 'top', 'club', 'online', 'site', 'live', 'icu', 'cf', 'gq', 'ml', 'ga', 'tk',
+      'buzz', 'work', 'click', 'link', 'fit', 'rest', 'cn', 'ru', 'su', 'pw', 'cc', 'ws',
+      'info', 'biz', 'name', 'mobi', 'pro', 'travel', 'museum', 'aero', 'coop', 'jobs'
+    ]);
+
+    const PHISHING_KEYWORDS = [
+      'login', 'signin', 'verify', 'account', 'update', 'secure', 'banking', 'confirm',
+      'password', 'credential', 'authenticate', 'authorize', 'billing', 'payment', 'invoice',
+      'alert', 'warning', 'suspended', 'locked', 'unusual', 'security', 'support', 'service',
+      'amazon', 'paypal', 'apple', 'microsoft', 'google', 'facebook', 'netflix', 'bank',
+      'wellsfargo', 'chase', 'citibank', 'dropbox', 'linkedin', 'adobe', 'icloud'
+    ];
+
+    const BRAND_NAMES = [
+      'paypal', 'apple', 'amazon', 'microsoft', 'google', 'facebook', 'netflix', 'bank',
+      'wellsfargo', 'chase', 'citibank', 'dropbox', 'linkedin', 'adobe', 'icloud', 'instagram',
+      'whatsapp', 'telegram', 'coinbase', 'binance', 'steam', 'roblox', 'outlook', 'office'
+    ];
+
+    const TRUSTED_DOMAINS = new Set([
+      'google.com', 'youtube.com', 'facebook.com', 'wikipedia.org', 'amazon.com',
+      'twitter.com', 'x.com', 'instagram.com', 'linkedin.com', 'microsoft.com',
+      'apple.com', 'netflix.com', 'github.com', 'paypal.com', 'reddit.com',
+      'whatsapp.com', 'zoom.us', 'dropbox.com', 'adobe.com', 'cloudflare.com',
+      'mozilla.org', 'wordpress.com', 'nytimes.com', 'bbc.co.uk', 'cnn.com'
+    ]);
+
+    function extractHostname(url) {
+      try {
+        let processed = url.trim();
+        if (!/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(processed)) {
+          processed = 'http://' + processed;
+        }
+        const urlObj = new URL(processed);
+        return urlObj.hostname;
+      } catch {
+        return null;
+      }
+    }
+
+    function getDomainParts(hostname) {
+      if (!hostname) return { subdomains: [], domain: '', tld: '' };
+      const parts = hostname.split('.');
+      if (parts.length === 1) return { subdomains: [], domain: parts[0] || '', tld: '' };
+      const tld = parts[parts.length - 1];
+      const domain = parts[parts.length - 2];
+      const subdomains = parts.slice(0, parts.length - 2);
+      return { subdomains, domain, tld };
+    }
+
+    function isIpAddress(hostname) {
+      if (!hostname) return false;
+      const ipv4Pattern = /^(\d{1,3}\.){3}\d{1,3}$/;
+      if (ipv4Pattern.test(hostname)) {
+        const parts = hostname.split('.').map(Number);
+        return parts.every(p => p >= 0 && p <= 255);
+      }
+      if (hostname.includes(':')) return true;
+      return false;
+    }
+
+    function countSubdomains(hostname) {
+      const parts = hostname.split('.');
+      if (isIpAddress(hostname)) return 0;
+      return Math.max(0, parts.length - 2);
+    }
+
+    function analyzeUrl(rawUrl) {
+      const result = {
+        url: rawUrl,
+        score: 0,
+        flags: [],
+        features: [],
+        hostname: '',
+        domain: '',
+        tld: '',
+        isIp: false,
+        subdomainCount: 0,
+        suspiciousTld: false,
+        hasPunycode: false,
+        brandImpersonation: false,
+        phishingKeywords: [],
+        longUrl: false,
+        hasAtSymbol: false,
+        doubleSlash: false,
+        hyphenCount: 0,
+        digitCount: 0,
+      };
+
+      let urlString = rawUrl.trim();
+      if (!urlString) {
+        return { error: 'URL is empty' };
+      }
+
+      if (!/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(urlString)) {
+        urlString = 'http://' + urlString;
+      }
+
+      let urlObj;
+      try {
+        urlObj = new URL(urlString);
+      } catch (e) {
+        return { error: 'Invalid URL format' };
+      }
+
+      const hostname = urlObj.hostname;
+      if (!hostname) return { error: 'Could not extract hostname' };
+      result.hostname = hostname;
+
+      result.isIp = isIpAddress(hostname);
+      if (result.isIp) {
+        result.score += 45;
+        result.flags.push('IP address instead of domain');
+        result.features.push('IP-based URL');
+      }
+
+      if (hostname.includes('xn--')) {
+        result.hasPunycode = true;
+        result.score += 30;
+        result.flags.push('Punycode / homograph attack risk');
+        result.features.push('Punycode domain');
+      }
+
+      const { subdomains, domain, tld } = getDomainParts(hostname);
+      result.domain = domain;
+      result.tld = tld;
+      result.subdomainCount = subdomains.length;
+
+      if (tld && SUSPICIOUS_TLDS.has(tld.toLowerCase())) {
+        result.suspiciousTld = true;
+        result.score += 20;
+        result.flags.push(`Suspicious TLD: .${tld}`);
+        result.features.push('Risky TLD');
+      }
+
+      if (result.subdomainCount >= 3) {
+        result.score += 18;
+        result.flags.push(`Excessive subdomains (${result.subdomainCount})`);
+        result.features.push('Deep subdomain nesting');
+      } else if (result.subdomainCount === 2) {
+        result.score += 8;
+        result.features.push('Multiple subdomains');
+      }
+
+      if (rawUrl.includes('@')) {
+        result.hasAtSymbol = true;
+        result.score += 25;
+        result.flags.push('Contains "@" — may hide real destination');
+        result.features.push('@ in URL');
+      }
+
+      const path = urlObj.pathname;
+      if (path.includes('//')) {
+        result.doubleSlash = true;
+        result.score += 12;
+        result.flags.push('Double slash in path (obfuscation)');
+        result.features.push('Path obfuscation');
+      }
+
+      if (rawUrl.length > 120) {
+        result.longUrl = true;
+        result.score += 10;
+        result.flags.push(`Very long URL (${rawUrl.length} chars)`);
+        result.features.push('Lengthy URL');
+      } else if (rawUrl.length > 75) {
+        result.score += 5;
+        result.features.push('Long URL');
+      }
+
+      const domainPart = domain || '';
+      const hyphenCount = (domainPart.match(/-/g) || []).length;
+      const digitCount = (domainPart.match(/\d/g) || []).length;
+      result.hyphenCount = hyphenCount;
+      result.digitCount = digitCount;
+
+      if (hyphenCount >= 3) {
+        result.score += 15;
+        result.flags.push(`Many hyphens in domain (${hyphenCount})`);
+        result.features.push('Hyphenated domain');
+      } else if (hyphenCount >= 1) {
+        result.score += 4;
+      }
+
+      if (digitCount >= 4) {
+        result.score += 12;
+        result.flags.push(`Many digits in domain (${digitCount})`);
+        result.features.push('Digit-heavy domain');
+      } else if (digitCount >= 2) {
+        result.score += 4;
+      }
+
+      const fullDomain = (domain + '.' + tld).toLowerCase();
+      const lowerHost = hostname.toLowerCase();
+      const lowerDomain = domain ? domain.toLowerCase() : '';
+
+      const isTrusted = TRUSTED_DOMAINS.has(fullDomain) ||
+                       (subdomains.length === 0 && TRUSTED_DOMAINS.has(hostname.toLowerCase()));
+
+      let brandFound = false;
+      for (let brand of BRAND_NAMES) {
+        if (lowerHost.includes(brand) && !fullDomain.endsWith(brand + '.' + tld) && fullDomain !== brand + '.' + tld) {
+          if (!lowerDomain.includes(brand) || lowerDomain !== brand) {
+            brandFound = true;
+            result.score += 35;
+            result.flags.push(`Possible brand impersonation: "${brand}"`);
+            result.features.push('Brand impersonation');
+            break;
+          }
+        }
+      }
+      result.brandImpersonation = brandFound;
+
+      const urlLower = rawUrl.toLowerCase();
+      const foundKeywords = [];
+      for (let kw of PHISHING_KEYWORDS) {
+        if (urlLower.includes(kw)) {
+          foundKeywords.push(kw);
+        }
+      }
+      if (foundKeywords.length > 0) {
+        result.phishingKeywords = foundKeywords;
+        const kwScore = Math.min(35, foundKeywords.length * 7);
+        result.score += kwScore;
+        result.flags.push(`Phishing keywords: ${foundKeywords.slice(0, 3).join(', ')}${foundKeywords.length > 3 ? '…' : ''}`);
+        result.features.push('Keyword pattern');
+      }
+
+      if (isTrusted) {
+        if (result.score > 0) {
+          result.score = Math.max(0, result.score - 45);
+          result.flags.push('Known trusted domain (risk reduced)');
+          result.features.push('Trusted domain');
+        } else {
+          result.flags.push('Trusted domain');
+        }
+      }
+
+      let finalScore = Math.min(100, Math.max(0, Math.round(result.score)));
+
+      let verdict = 'unknown';
+      let verdictLabel = 'Suspicious';
+      let icon = '❓';
+      let sub = 'Unable to analyze fully';
+
+      if (finalScore >= 70) {
+        verdict = 'danger';
+        verdictLabel = 'Phishing / Malicious';
+        icon = '⛔';
+        sub = 'High risk — do not enter credentials';
+      } else if (finalScore >= 35) {
+        verdict = 'suspicious';
+        verdictLabel = 'Suspicious';
+        icon = '⚠️';
+        sub = 'Proceed with caution — potential threat';
+      } else if (finalScore >= 12) {
+        verdict = 'unknown';
+        verdictLabel = 'Possibly Safe';
+        icon = '🔍';
+        sub = 'Some minor risk factors detected';
+      } else {
+        verdict = 'safe';
+        verdictLabel = 'Looks Safe';
+        icon = '✅';
+        sub = 'No obvious phishing indicators';
+      }
+
+      if (isTrusted && finalScore < 20) {
+        verdict = 'safe';
+        verdictLabel = 'Trusted domain';
+        icon = '✅';
+        sub = 'Known safe domain';
+      }
+
+      return {
+        error: null,
+        score: finalScore,
+        verdict,
+        verdictLabel,
+        icon,
+        sub,
+        flags: result.flags,
+        features: result.features,
+        hostname,
+        domain: domain || hostname,
+        tld,
+        isIp: result.isIp,
+        subdomainCount: result.subdomainCount,
+        suspiciousTld: result.suspiciousTld,
+        hasPunycode: result.hasPunycode,
+        phishingKeywords: result.phishingKeywords,
+        longUrl: result.longUrl,
+        hasAtSymbol: result.hasAtSymbol,
+        brandImpersonation: result.brandImpersonation,
+        trusted: isTrusted,
+      };
+    }
+
+    const urlInput = document.getElementById('urlInput');
+    const scanBtn = document.getElementById('scanBtn');
+    const resultContainer = document.getElementById('resultContainer');
+    const emptyState = document.getElementById('emptyState');
+
+    function renderResult(data) {
+      if (data.error) {
+        resultContainer.style.display = 'block';
+        resultContainer.className = 'result-card';
+        resultContainer.innerHTML = ``;
+        emptyState.style.display = 'none';
+        return;
+      }
+
+      const featureTags = [];
+      if (data.features && data.features.length) {
+        data.features.forEach(f => {
+          const isRisk = ['IP-based URL', 'Punycode domain', 'Risky TLD', 'Deep subdomain nesting',
+                          'Brand impersonation', 'Keyword pattern', 'Hyphenated domain',
+                          'Digit-heavy domain', '@ in URL', 'Path obfuscation'].some(risk => f.includes(risk));
+          featureTags.push(`<span class="feature-tag ${isRisk ? 'risk' : ''}">${f}</span>`);
+        });
+      }
+
+      const flagsHtml = data.flags.length
+        ? data.flags.map(f => `<div class="detail-item">• ${f}</div>`).join('')
+        : '<div class="detail-item">No specific flags</div>';
+
+      const verdictClass = data.verdict;
+      const icon = data.icon;
+      const label = data.verdictLabel;
+      const score = data.score;
+
+      const resultHtml = `
+        <div class="verdict ${verdictClass}">
+          <div class="verdict-icon">${icon}</div>
+          <div>
+            <div class="verdict-text">${label}</div>
+            <div class="verdict-sub">${data.sub} — risk score: ${score}/100</div>
+          </div>
+        </div>
+        <div class="feature-list">
+          ${featureTags.join('') || '<span class="feature-tag">No special features</span>'}
+        </div>
+        <div style="margin-top:1rem; font-size:0.9rem; color:#b8d8e8;">
+          <strong> Flags:</strong>
+          <div style="margin-top:0.4rem; display:flex; flex-direction:column; gap:0.25rem;">
+            ${flagsHtml}
+          </div>
+        </div>
+        ${data.phishingKeywords && data.phishingKeywords.length ? `
+          <div style="margin-top:0.8rem; font-size:0.9rem; color:#ffb86b;">
+            <strong>⚠️ Keywords:</strong> ${data.phishingKeywords.join(', ')}
+          </div>
+        ` : ''}
+      `;
+
+      resultContainer.innerHTML = resultHtml;
+      resultContainer.className = `result-card fade-in ${verdictClass}`;
+      resultContainer.style.display = 'block';
+      emptyState.style.display = 'none';
+    }
+
+    function performScan() {
+      const rawUrl = urlInput.value.trim();
+      if (!rawUrl) {
+        urlInput.parentElement.classList.add('error-shake');
+        setTimeout(() => urlInput.parentElement.classList.remove('error-shake'), 350);
+        resultContainer.style.display = 'none';
+        emptyState.style.display = 'flex';
+        return;
+      }
+
+      const analysis = analyzeUrl(rawUrl);
+      renderResult(analysis);
+    }
+
+    scanBtn.addEventListener('click', performScan);
+    urlInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        performScan();
+      }
+    });
+
+    document.querySelectorAll('.examples button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const url = btn.getAttribute('data-url');
+        urlInput.value = url;
+        performScan();
+      });
+    });
+
+    resultContainer.style.display = 'none';
+    emptyState.style.display = 'flex';
+  })();
+</script>
+</body>
+</html>
